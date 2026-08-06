@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="page-header">
+    <h1>Admin</h1>
+  </header>
+
+  <section id="login-section" class="panel">
+    <form id="login-form">
+      <label for="password">Admin Password</label>
+      <input type="password" id="password" required autocomplete="current-password">
+      <button type="submit">Log In</button>
+      <p id="login-error" class="error hidden"></p>
+    </form>
+  </section>
+
+  <section id="admin-section" class="panel hidden">
+    <div class="admin-grid">
+      <div class="admin-card">
+        <h2>Services</h2>
+        <form id="add-service-form" class="inline-form">
+          <input type="text" id="new-service-name" placeholder="New service name" required>
+          <button type="submit">Add</button>
+        </form>
+        <ul id="service-list" class="service-list"></ul>
+      </div>
+
+      <div class="admin-card">
+        <h2>Daily Report</h2>
+        <form id="report-form" class="inline-form">
+          <input type="date" id="report-date">
+          <button type="submit">Download CSV</button>
+        </form>
+      </div>
+    </div>
+    <button type="button" id="logout-btn" class="link-btn">Log out</button>
+  </section>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>
