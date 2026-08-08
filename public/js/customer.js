@@ -26,7 +26,7 @@ async function confirmSelection() {
     const res = await fetch(`/api/services/${id}/token`, { method: 'POST' });
     if (!res.ok) throw new Error('Failed');
     const data = await res.json();
-    showToast(`${data.name}: Your token is #${data.currentToken}`);
+    showToast(`${data.name}: Your token is #${data.token}`);
     clearSelection();
   } catch (err) {
     showToast('Something went wrong. Please try again.', true);

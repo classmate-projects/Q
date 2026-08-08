@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desk Control</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="page-header">
+    <h1>Desk Control</h1>
+    <p class="subtitle">Pick a service, then call tokens from each desk</p>
+  </header>
+
+  <% if (services.length === 0) { %>
+    <p class="empty">No services yet. Add some on the admin page.</p>
+  <% } else { %>
+    <nav id="service-tabs" class="service-tabs">
+      <% services.forEach(function (service) { %>
+        <button class="service-tab" data-id="<%= service.id %>" style="--svc: var(--cat-<%= service.colorIndex %>)">
+          <span class="svc-dot"></span><%= service.name %>
+        </button>
+      <% }) %>
+    </nav>
+    <main id="desk-panel" class="desk-panel"></main>
+  <% } %>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script>window.__SERVICES__ = <%- JSON.stringify(services) %>;</script>
+  <script src="/js/desk.js"></script>
+</body>
+</html>

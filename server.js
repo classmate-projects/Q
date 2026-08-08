@@ -36,20 +36,41 @@ app.get('/display', (req, res) => {
   res.render('display', { services: db.listServices() });
 });
 
+app.get('/desk', (req, res) => {
+  res.render('desk', { services: db.listServices() });
+});
+
 app.get('/admin', (req, res) => {
   res.render('admin');
 });
 
-// ---- Public API (customer + display pages) ----
+// ---- Public API (customer + display + desk pages) ----
 
 app.get('/api/services', (req, res) => {
   res.json(db.listServices());
 });
 
+// A customer takes a token (joins the queue).
 app.post('/api/services/:id/token', (req, res) => {
-  const result = db.generateToken(req.params.id);
+  const result = db.takeToken(req.params.id);
   if (!result) return res.status(404).json({ error: 'Service not found' });
-  broadcast({ type: 'token', ...result });
+  broadcast({ type: 'queue', id: result.id, waiting: result.waiting });
+  res.json(result);
+});
+
+// A desk calls the next waiting token (FIFO).
+app.post('/api/services/:id/desks/:desk/call', (req, res) => {
+  const result = db.callNext(req.params.id, parseInt(req.params.desk, 10));
+  if (!result) return res.status(404).json({ error: 'Service or desk not found' });
+  if (result.called) broadcast({ type: 'call', ...result });
+  res.json(result);
+});
+
+// A desk re-announces the token it is already serving.
+app.post('/api/services/:id/desks/:desk/recall', (req, res) => {
+  const result = db.recall(req.params.id, parseInt(req.params.desk, 10));
+  if (!result) return res.status(404).json({ error: 'Service or desk not found' });
+  if (result.token) broadcast({ type: 'recall', ...result });
   res.json(result);
 });
 
@@ -79,7 +100,14 @@ app.get('/api/admin/services', auth.requireAuth, (req, res) => {
 app.post('/api/admin/services', auth.requireAuth, (req, res) => {
   const name = (req.body.name || '').trim();
   if (!name) return res.status(400).json({ error: 'Name required' });
-  const service = db.addService(name);
+  const service = db.addService(name, req.body.deskCount);
+  broadcast({ type: 'services-updated' });
+  res.json(service);
+});
+
+app.patch('/api/admin/services/:id', auth.requireAuth, (req, res) => {
+  const service = db.setDeskCount(req.params.id, req.body.deskCount);
+  if (!service) return res.status(404).json({ error: 'Not found' });
   broadcast({ type: 'services-updated' });
   res.json(service);
 });
@@ -110,5 +138,6 @@ server.listen(PORT, () => {
   console.log(`Q token system running at http://localhost:${PORT}`);
   console.log(`  Customer page: http://localhost:${PORT}/`);
   console.log(`  Display page:  http://localhost:${PORT}/display`);
+  console.log(`  Desk page:     http://localhost:${PORT}/desk`);
   console.log(`  Admin page:    http://localhost:${PORT}/admin`);
 });

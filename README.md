@@ -1,28 +1,35 @@
-# Q — Service Token Display System
+# Q — Service Token Queue System
 
-A simple token/queue system for a service counter. Customers pick a service from a
-grid and get a token number; a separate display screen shows the current and
-previous token for every service in real time. Admins can manage the list of
-services and download a daily report of how many customers were served.
+A simple token queue system for service counters. Customers take a token for a
+service; staff at one or more desks call tokens in order; and a "Now Serving"
+board shows, live, which token each desk is currently calling. Admins manage the
+list of services (and how many desks each has) and download a daily report of
+how many customers arrived per service.
 
 ## Pages
 
-- **Customer page** — `http://localhost:3000/` — grid of services, tap one to
-  generate a token.
-- **Display page** — `http://localhost:3000/display` — open on a second
-  screen/tablet/monitor. Shows current + previous token per service and updates
-  instantly (via WebSocket) whenever a customer takes a token.
-- **Admin page** — `http://localhost:3000/admin` — password-protected. Add
-  or delete services, and download a CSV report of customers served per service
-  for any date.
+- **Customer page** — `http://localhost:3000/` — grid of services. The customer
+  taps a service, then presses **OK** to take a token. (Tap a different service
+  before OK to change the choice.)
+- **Now Serving board** — `http://localhost:3000/display` — open on a screen in
+  the waiting area. For each service it shows every desk and the token that desk
+  is currently calling. Updates instantly (WebSocket) whenever a desk calls or
+  recalls a token.
+- **Desk control** — `http://localhost:3000/desk` — for staff. Pick a service and
+  you'll see all of its desks, each with **Call Next** and **Recall**:
+  - **Call Next** serves the next waiting token (FIFO). A desk can't call past
+    the last token taken — it shows "No one waiting" when the queue is caught up.
+  - **Recall** re-announces the token that desk is already serving (flashes it on
+    the board) without advancing the queue.
+- **Admin page** — `http://localhost:3000/admin` — password-protected. Add or
+  delete services, set how many desks each service has, and download a CSV report
+  of customers served per service for any date.
 
-All three pages are rendered server-side by Express/EJS (`views/`) — the grid
-and the current/previous token numbers are baked into the HTML on each
-request, so there's no loading flash and the pages work even before any
-client JS runs. Client JS (`public/js/`) only wires up click handlers and
-patches the display page's numbers live over WebSocket; adding/removing a
-service triggers a reload of the affected pages so the server-rendered markup
-stays the source of truth.
+All pages are rendered server-side by Express/EJS (`views/`), so the initial
+state is baked into the HTML with no loading flash. Client JS (`public/js/`)
+handles interactions and patches the live numbers over WebSocket. Adding,
+deleting, or changing a service (including its desk count) reloads the affected
+pages so the server-rendered markup stays the source of truth.
 
 ## Setup
 
@@ -44,29 +51,35 @@ stays the source of truth.
    ```
    npm start
    ```
+   (`npm run dev` runs the same thing but auto-restarts when you edit a file.)
 5. Open the pages above in a browser. Since everything runs on your local
    machine, other devices on the same WiFi network can reach it too using your
    computer's local IP instead of `localhost` (e.g. `http://192.168.1.23:3000/`).
 
 ## How it works
 
-- Each service has its own daily token sequence — the first token of each day
-  is `#1`. Current/previous token numbers reset automatically at the start of
-  a new day.
-- Data is stored in `data/db.json`, created automatically on first run. Back
-  this file up if you want to keep history beyond what the daily report
-  captures.
-- Deleting a service in the admin page removes it from the customer grid but
-  keeps its history so past daily reports stay accurate.
-- The daily report is a CSV download (`Service,Customers Served`) for a date
-  you pick, defaulting to today.
-- Each service is given a stable color (derived from its id) so the same hue
-  identifies it on the customer grid, the display board, and the admin list.
-  The pages are theme-aware — they follow the device's light/dark setting.
+- **Two counters per service, per day.** *Issued* counts tokens customers have
+  taken; *called* is how far the desks have served. Call Next advances *called*
+  (up to *issued*) and assigns that token to the calling desk. Both reset
+  automatically at the start of a new day, so the first token each day is `#1`.
+- **Multiple desks.** Each service has a number of desks set in admin. Every desk
+  serves from the same FIFO queue but tracks the token it personally called, so
+  the board can show "Token 15 → Desk 2".
+- **Data** is stored in `data/db.json`, created automatically on first run. Set
+  `QUEUE_DB_PATH` to store it elsewhere. Back it up to keep history beyond the
+  daily report.
+- **Deleting a service** removes it from the customer/desk/board pages but keeps
+  its history so past daily reports stay accurate.
+- **The daily report** is a CSV download (`Service,Customers Served`) for a date
+  you pick, defaulting to today. "Served" counts tokens taken (customers arrived).
+- **Colors.** Each service gets a distinct color (assigned in creation order)
+  used consistently across the customer grid, board, desk page, and admin list.
+  Pages are theme-aware and follow the device's light/dark setting.
 
 ## Notes
 
-- This app is designed to run on one machine on a trusted local network (e.g.
-  a shop counter). The admin login is a single shared password, not full user
-  accounts — enough to keep casual visitors from editing services, not a
-  substitute for real access control if exposed to the internet.
+- Designed to run on one machine on a trusted local network (e.g. a shop or
+  clinic counter). The admin login is a single shared password; the customer and
+  desk pages are open on the local network. This is enough to keep casual
+  visitors from editing services — not a substitute for real access control if
+  the app is exposed to the internet.

@@ -44,15 +44,18 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 document.getElementById('add-service-form').addEventListener('submit', async e => {
   e.preventDefault();
   const input = document.getElementById('new-service-name');
+  const desksInput = document.getElementById('new-service-desks');
   const name = input.value.trim();
   if (!name) return;
+  const deskCount = parseInt(desksInput.value, 10) || 1;
   const res = await fetch('/api/admin/services', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, deskCount }),
   });
   if (res.ok) {
     input.value = '';
+    desksInput.value = '1';
     loadServices();
   }
 });
@@ -72,7 +75,22 @@ async function loadServices() {
     const li = document.createElement('li');
     li.className = 'service-list-item';
     li.style.setProperty('--svc', `var(--cat-${service.colorIndex})`);
-    li.innerHTML = `<span class="svc-dot"></span><span class="svc-label">${escapeHtml(service.name)}</span>`;
+    li.innerHTML =
+      `<span class="svc-dot"></span>` +
+      `<span class="svc-label">${escapeHtml(service.name)}</span>`;
+
+    const desksField = document.createElement('label');
+    desksField.className = 'desk-count-field';
+    desksField.textContent = 'Desks';
+    const desksInput = document.createElement('input');
+    desksInput.type = 'number';
+    desksInput.min = '1';
+    desksInput.max = '20';
+    desksInput.value = service.deskCount;
+    desksInput.addEventListener('change', () => setDeskCount(service.id, desksInput));
+    desksField.appendChild(desksInput);
+    li.appendChild(desksField);
+
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.textContent = 'Delete';
@@ -81,6 +99,19 @@ async function loadServices() {
     li.appendChild(delBtn);
     list.appendChild(li);
   });
+}
+
+async function setDeskCount(id, input) {
+  const deskCount = parseInt(input.value, 10) || 1;
+  const res = await fetch(`/api/admin/services/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deskCount }),
+  });
+  if (res.ok) {
+    const service = await res.json();
+    input.value = service.deskCount; // reflect clamped value
+  }
 }
 
 async function deleteService(id) {

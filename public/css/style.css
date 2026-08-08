@@ -290,22 +290,18 @@ body {
   font-weight: 600;
 }
 
-.display-list {
+.board {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 18px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
-.display-row {
+.board-card {
   --svc: var(--accent);
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 24px 28px 24px 34px;
+  padding: 20px 22px 22px 30px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -313,7 +309,7 @@ body {
   overflow: hidden;
 }
 
-.display-row::before {
+.board-card::before {
   content: "";
   position: absolute;
   left: 0;
@@ -323,62 +319,189 @@ body {
   background: var(--svc);
 }
 
-.display-name {
-  font-size: clamp(1.25rem, 2.2vw, 1.7rem);
+.board-name {
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
   font-weight: 800;
   letter-spacing: -0.01em;
+  margin: 0 0 14px;
 }
 
-.display-tokens {
+.board-desks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+}
+
+.board-desk {
   display: flex;
-  align-items: flex-end;
-  gap: 28px;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
-.token-block {
-  text-align: center;
-}
-
-.token-label {
-  display: block;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 700;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-.token-number {
+.desk-token {
   font-variant-numeric: tabular-nums;
-  line-height: 1;
-  display: block;
-}
-
-.token-block.current .token-number {
-  font-size: clamp(2.6rem, 5vw, 3.6rem);
+  font-size: clamp(2.2rem, 4vw, 3rem);
   font-weight: 800;
+  line-height: 1;
 }
 
-.token-block.next .token-number {
-  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+.desk-name {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
   font-weight: 700;
   color: var(--text-muted);
 }
 
 @keyframes flash-pulse {
   0% {
-    background: color-mix(in srgb, var(--svc) 22%, var(--surface));
-    transform: scale(1.015);
+    background: color-mix(in srgb, var(--svc) 30%, var(--surface-2));
+    transform: scale(1.04);
   }
   100% {
-    background: var(--surface);
+    background: var(--surface-2);
     transform: scale(1);
   }
 }
 
-.display-row.flash {
-  animation: flash-pulse 1s ease-out;
+.board-desk.flash {
+  animation: flash-pulse 1.1s ease-out;
+}
+
+/* ---------- Desk control page ---------- */
+
+.service-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  max-width: 900px;
+  margin: 0 auto 28px;
+}
+
+.service-tab {
+  --svc: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-weight: 700;
+}
+
+.service-tab .svc-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--svc);
+}
+
+.service-tab.active {
+  border-color: var(--svc);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--svc) 40%, transparent);
+}
+
+.desk-panel {
+  --svc: var(--accent);
+  max-width: 900px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+}
+
+.desk-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.desk-panel-head h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.waiting-pill {
+  margin-left: auto;
+  background: color-mix(in srgb, var(--svc) 16%, var(--surface));
+  color: color-mix(in srgb, var(--svc) 62%, var(--ink-strong));
+  border: 1px solid color-mix(in srgb, var(--svc) 30%, transparent);
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.desk-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.desk-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 20px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.desk-card-label {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.desk-card-token {
+  font-variant-numeric: tabular-nums;
+  font-size: 2.8rem;
+  font-weight: 800;
+  line-height: 1;
+  color: color-mix(in srgb, var(--svc) 62%, var(--ink-strong));
+}
+
+.desk-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  width: 100%;
+}
+
+.call-btn {
+  flex: 1;
+}
+
+.recall-btn {
+  flex: 1;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.recall-btn:hover {
+  filter: none;
+  background: var(--surface);
+}
+
+.desk-card.flash {
+  animation: flash-pulse 1.1s ease-out;
 }
 
 /* ---------- Admin ---------- */
@@ -479,6 +602,37 @@ button:active {
 .inline-form input {
   margin-bottom: 0;
   flex: 1;
+}
+
+.add-service-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.add-service-form #new-service-name {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 140px;
+}
+
+.desk-count-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.desk-count-field input {
+  width: 68px;
+  margin-bottom: 0;
+  padding: 10px 10px;
+  text-align: center;
 }
 
 .service-list {

@@ -11,24 +11,22 @@
     <h1>Now Serving</h1>
     <span id="clock" class="clock"></span>
   </header>
-  <main id="display-list" class="display-list">
+  <main id="board" class="board">
     <% if (services.length === 0) { %>
       <p class="empty">No services available.</p>
     <% } else { %>
       <% services.forEach(function (service) { %>
-        <div class="display-row" data-id="<%= service.id %>" style="--svc: var(--cat-<%= service.colorIndex %>)">
-          <div class="display-name"><%= service.name %></div>
-          <div class="display-tokens">
-            <div class="token-block current">
-              <span class="token-label">Current</span>
-              <span class="token-number svc-ink"><%= service.currentToken || '-' %></span>
-            </div>
-            <div class="token-block next">
-              <span class="token-label">Next</span>
-              <span class="token-number"><%= service.nextToken %></span>
-            </div>
+        <section class="board-card" data-id="<%= service.id %>" style="--svc: var(--cat-<%= service.colorIndex %>)">
+          <h2 class="board-name"><%= service.name %></h2>
+          <div class="board-desks">
+            <% service.desks.forEach(function (desk) { %>
+              <div class="board-desk" data-desk="<%= desk.number %>">
+                <span class="desk-token svc-ink"><%= desk.current || '—' %></span>
+                <span class="desk-name">Desk <%= desk.number %></span>
+              </div>
+            <% }) %>
           </div>
-        </div>
+        </section>
       <% }) %>
     <% } %>
   </main>
