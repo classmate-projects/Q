@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Now Serving</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="display-body">
+  <header class="display-header">
+    <h1>Now Serving</h1>
+    <span id="clock" class="clock"></span>
+  </header>
+  <main id="display-list" class="display-list">
+    <% if (services.length === 0) { %>
+      <p class="empty">No services available.</p>
+    <% } else { %>
+      <% services.forEach(function (service) { %>
+        <div class="display-row" data-id="<%= service.id %>" style="--svc: var(--cat-<%= service.colorIndex %>)">
+          <div class="display-name"><%= service.name %></div>
+          <div class="display-tokens">
+            <div class="token-block current">
+              <span class="token-label">Current</span>
+              <span class="token-number svc-ink"><%= service.currentToken || '-' %></span>
+            </div>
+            <div class="token-block next">
+              <span class="token-label">Next</span>
+              <span class="token-number"><%= service.nextToken %></span>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } %>
+  </main>
+  <script src="/js/display.js"></script>
+</body>
+</html>

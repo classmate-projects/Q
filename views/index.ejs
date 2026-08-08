@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select a Service</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="customer-body">
+  <header class="page-header">
+    <h1>Select a Service</h1>
+    <p class="subtitle">Choose a service, then press OK to get your token</p>
+  </header>
+  <main id="grid" class="grid">
+    <% if (services.length === 0) { %>
+      <p class="empty">No services available right now.</p>
+    <% } else { %>
+      <% services.forEach(function (service) { %>
+        <button class="grid-item" data-id="<%= service.id %>" style="--svc: var(--cat-<%= service.colorIndex %>)">
+          <span class="svc-avatar svc-ink"><%= service.name.trim().charAt(0).toUpperCase() %></span>
+          <span class="service-name"><%= service.name %></span>
+        </button>
+      <% }) %>
+    <% } %>
+  </main>
+  <div id="confirm-bar" class="confirm-bar hidden">
+    <span class="confirm-text">Selected: <strong id="selected-name"></strong></span>
+    <button type="button" id="confirm-btn" class="confirm-btn">OK</button>
+  </div>
+  <div id="toast" class="toast hidden"></div>
+  <script src="/js/customer.js"></script>
+</body>
+</html>

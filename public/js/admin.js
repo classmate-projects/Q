@@ -71,7 +71,8 @@ async function loadServices() {
   services.forEach(service => {
     const li = document.createElement('li');
     li.className = 'service-list-item';
-    li.innerHTML = `<span>${escapeHtml(service.name)}</span>`;
+    li.style.setProperty('--svc', `var(--cat-${service.colorIndex})`);
+    li.innerHTML = `<span class="svc-dot"></span><span class="svc-label">${escapeHtml(service.name)}</span>`;
     const delBtn = document.createElement('button');
     delBtn.type = 'button';
     delBtn.textContent = 'Delete';

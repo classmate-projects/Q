@@ -30,19 +30,32 @@ function save() {
   fs.writeFileSync(DB_PATH, JSON.stringify(state, null, 2));
 }
 
-// A service's currentToken/previousToken only apply to the day named in
-// tokenDate. If that day isn't today, nothing has been issued yet today.
+// A service's currentToken only applies to the day named in tokenDate. If that
+// day isn't today, nothing has been issued yet today. nextToken is the number
+// the next customer will receive (always currentToken + 1).
 function displayState(service) {
-  if (service.tokenDate === todayStr()) {
-    return { currentToken: service.currentToken, previousToken: service.previousToken };
-  }
-  return { currentToken: 0, previousToken: 0 };
+  const currentToken = service.tokenDate === todayStr() ? service.currentToken : 0;
+  return { currentToken, nextToken: currentToken + 1 };
+}
+
+// Stable 0-7 index used to pick a consistent color for a service across every
+// page. Derived from the id so it never changes for a given service.
+function colorIndex(id) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return h % 8;
 }
 
 function listServices({ includeInactive = false } = {}) {
   return state.services
     .filter(s => includeInactive || s.active)
-    .map(s => ({ id: s.id, name: s.name, active: s.active, ...displayState(s) }));
+    .map(s => ({
+      id: s.id,
+      name: s.name,
+      active: s.active,
+      colorIndex: colorIndex(s.id),
+      ...displayState(s),
+    }));
 }
 
 function addService(name) {
@@ -51,7 +64,6 @@ function addService(name) {
     name: name.trim(),
     active: true,
     currentToken: 0,
-    previousToken: 0,
     tokenDate: null,
     createdAt: new Date().toISOString(),
   };
@@ -75,11 +87,9 @@ function generateToken(serviceId) {
   const today = todayStr();
   if (service.tokenDate !== today) {
     service.currentToken = 0;
-    service.previousToken = 0;
     service.tokenDate = today;
   }
 
-  service.previousToken = service.currentToken;
   service.currentToken += 1;
 
   state.tokens.push({
@@ -96,7 +106,7 @@ function generateToken(serviceId) {
     id: service.id,
     name: service.name,
     currentToken: service.currentToken,
-    previousToken: service.previousToken,
+    nextToken: service.currentToken + 1,
   };
 }
 

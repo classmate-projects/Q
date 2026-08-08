@@ -12,6 +12,9 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: '/ws' });
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -22,6 +25,20 @@ function broadcast(payload) {
     if (client.readyState === client.OPEN) client.send(data);
   });
 }
+
+// ---- Pages (server-rendered) ----
+
+app.get('/', (req, res) => {
+  res.render('index', { services: db.listServices() });
+});
+
+app.get('/display', (req, res) => {
+  res.render('display', { services: db.listServices() });
+});
+
+app.get('/admin', (req, res) => {
+  res.render('admin');
+});
 
 // ---- Public API (customer + display pages) ----
 
@@ -92,6 +109,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Q token system running at http://localhost:${PORT}`);
   console.log(`  Customer page: http://localhost:${PORT}/`);
-  console.log(`  Display page:  http://localhost:${PORT}/display.html`);
-  console.log(`  Admin page:    http://localhost:${PORT}/admin.html`);
+  console.log(`  Display page:  http://localhost:${PORT}/display`);
+  console.log(`  Admin page:    http://localhost:${PORT}/admin`);
 });

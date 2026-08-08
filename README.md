@@ -9,12 +9,20 @@ services and download a daily report of how many customers were served.
 
 - **Customer page** — `http://localhost:3000/` — grid of services, tap one to
   generate a token.
-- **Display page** — `http://localhost:3000/display.html` — open on a second
+- **Display page** — `http://localhost:3000/display` — open on a second
   screen/tablet/monitor. Shows current + previous token per service and updates
   instantly (via WebSocket) whenever a customer takes a token.
-- **Admin page** — `http://localhost:3000/admin.html` — password-protected. Add
+- **Admin page** — `http://localhost:3000/admin` — password-protected. Add
   or delete services, and download a CSV report of customers served per service
   for any date.
+
+All three pages are rendered server-side by Express/EJS (`views/`) — the grid
+and the current/previous token numbers are baked into the HTML on each
+request, so there's no loading flash and the pages work even before any
+client JS runs. Client JS (`public/js/`) only wires up click handlers and
+patches the display page's numbers live over WebSocket; adding/removing a
+service triggers a reload of the affected pages so the server-rendered markup
+stays the source of truth.
 
 ## Setup
 
@@ -52,6 +60,9 @@ services and download a daily report of how many customers were served.
   keeps its history so past daily reports stay accurate.
 - The daily report is a CSV download (`Service,Customers Served`) for a date
   you pick, defaulting to today.
+- Each service is given a stable color (derived from its id) so the same hue
+  identifies it on the customer grid, the display board, and the admin list.
+  The pages are theme-aware — they follow the device's light/dark setting.
 
 ## Notes
 
