@@ -1,0 +1,21 @@
+# Netlify configuration for the Q token system.
+# The whole app runs as one serverless function; static assets (CSS/JS) are
+# served from the publish directory, and every other path is rewritten to the
+# function.
+
+[build]
+  command = "npm install"
+  publish = "public"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+  # The EJS templates are read from disk at runtime, so bundle them in.
+  included_files = ["views/**"]
+
+# Serve real files in /public (e.g. /css/style.css) directly; send everything
+# else to the Express function.
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/server"
+  status = 200

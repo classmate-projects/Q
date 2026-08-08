@@ -3,6 +3,7 @@ let selectedId = services.length ? services[0].id : null;
 
 const panel = document.getElementById('desk-panel');
 const tabs = document.getElementById('service-tabs');
+const POLL_MS = 2000;
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -63,12 +64,12 @@ async function callNext(id, deskNumber) {
     const res = await fetch(`/api/services/${id}/desks/${deskNumber}/call`, { method: 'POST' });
     const data = await res.json();
     if (!data.called) showToast('No one waiting.', true);
-    // A successful call updates state through the WebSocket 'call' broadcast.
   } catch (err) {
     showToast('Something went wrong. Please try again.', true);
   } finally {
     if (btn) btn.disabled = false;
   }
+  refresh();
 }
 
 async function recall(id, deskNumber) {
@@ -83,42 +84,34 @@ async function recall(id, deskNumber) {
   } catch (err) {
     showToast('Something went wrong. Please try again.', true);
   }
-}
-
-function flashDesk(deskNumber) {
-  const card = panel.querySelector(`.desk-card[data-desk="${deskNumber}"]`);
-  if (!card) return;
-  card.classList.remove('flash');
-  void card.offsetWidth;
-  card.classList.add('flash');
-}
-
-function applyCall(msg) {
-  const svc = svcById(msg.id);
-  if (!svc) return;
-  const desk = svc.desks.find(d => d.number === msg.deskNumber);
-  if (desk) desk.current = msg.token;
-  svc.waiting = msg.waiting;
-  if (msg.id === selectedId) {
-    renderPanel();
-    flashDesk(msg.deskNumber);
-  }
-}
-
-function applyQueue(msg) {
-  const svc = svcById(msg.id);
-  if (!svc) return;
-  svc.waiting = msg.waiting;
-  if (msg.id === selectedId) {
-    const pill = document.getElementById('waiting-pill');
-    if (pill) pill.textContent = `${svc.waiting} waiting`;
-  }
+  refresh();
 }
 
 function selectService(id) {
   selectedId = id;
   renderTabs();
   renderPanel();
+}
+
+function structureChanged(data) {
+  const sig = list => list.map(s => `${s.id}:${s.deskCount}`).sort().join('|');
+  return sig(data) !== sig(services);
+}
+
+async function refresh() {
+  let data;
+  try {
+    data = await (await fetch('/api/services')).json();
+  } catch {
+    return;
+  }
+  if (structureChanged(data)) {
+    location.reload();
+    return;
+  }
+  const before = JSON.stringify(svcById(selectedId));
+  services = data;
+  if (JSON.stringify(svcById(selectedId)) !== before) renderPanel();
 }
 
 function showToast(message, isError = false) {
@@ -130,22 +123,6 @@ function showToast(message, isError = false) {
   showToast._t = setTimeout(() => toast.classList.add('hidden'), 3000);
 }
 
-function connectWs() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/ws`);
-  ws.onmessage = event => {
-    const msg = JSON.parse(event.data);
-    if (msg.type === 'call') applyCall(msg);
-    else if (msg.type === 'queue') applyQueue(msg);
-    else if (msg.type === 'recall') {
-      if (msg.id === selectedId) flashDesk(msg.deskNumber);
-    } else if (msg.type === 'services-updated') {
-      location.reload();
-    }
-  };
-  ws.onclose = () => setTimeout(connectWs, 2000);
-}
-
 if (tabs) {
   tabs.querySelectorAll('.service-tab').forEach(tab => {
     tab.addEventListener('click', () => selectService(tab.dataset.id));
@@ -154,4 +131,4 @@ if (tabs) {
 
 renderTabs();
 renderPanel();
-connectWs();
+setInterval(refresh, POLL_MS);

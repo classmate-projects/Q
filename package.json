@@ -12,10 +12,11 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "@netlify/blobs": "^8.1.0",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",
     "ejs": "^3.1.10",
     "express": "^4.19.2",
-    "ws": "^8.17.0"
+    "serverless-http": "^3.2.0"
   }
 }

@@ -15,7 +15,8 @@ how many customers arrived per service.
   service before OK to change the choice.)
 - **Now Serving board** — `http://localhost:3000/display` — open on a screen in
   the waiting area. For each service it shows every desk and the token that desk
-  is currently calling. Updates instantly (WebSocket) whenever a desk calls or
+  is currently calling. Updates live (instantly on a persistent server, or
+  within ~2s on Netlify) whenever a desk calls or
   recalls a token. It also chimes: a two-tone "ding-dong" when a new token is
   called and a distinct triple-beep on a recall. Click **Enable sound** once
   (top-right) to allow audio — browsers block sound until you interact with the
@@ -32,7 +33,8 @@ how many customers arrived per service.
 
 All pages are rendered server-side by Express/EJS (`views/`), so the initial
 state is baked into the HTML with no loading flash. Client JS (`public/js/`)
-handles interactions and patches the live numbers over WebSocket. Adding,
+handles interactions and refreshes the live numbers (a persistent server pushes
+instantly; on Netlify the pages poll every ~2s). Adding,
 deleting, or changing a service (including its desk count) reloads the affected
 pages so the server-rendered markup stays the source of truth.
 
@@ -63,27 +65,40 @@ pages so the server-rendered markup stays the source of truth.
 
 ## Hosting it online
 
-This is a **live Node server** (server-rendered pages + WebSockets + a file
-database), so it must run on a host that keeps a Node process alive. **Static
-hosts like Netlify or GitHub Pages will not work** — they only serve static
-files, so the base URL returns "Page not found" and live updates never connect.
+The app can be deployed two ways. **The code auto-detects where it runs** — no
+edits needed.
 
-Use a host that runs `npm start`, e.g. **Render**, **Railway**, or **Fly.io**.
-The app already reads `process.env.PORT` and needs no code changes.
+### Option A — Netlify (serverless)
 
-**Render (quickest):**
+`netlify.toml` runs the whole app as one serverless function, serves the
+CSS/JS statically, and stores data in **Netlify Blobs** (which persists across
+restarts, unlike a function's disk). Live updates use a ~2-second poll instead
+of WebSockets (serverless can't hold sockets open).
+
 1. Push this repo to GitHub.
-2. On [render.com](https://render.com): **New → Blueprint**, pick the repo
-   (it reads `render.yaml`). Or **New → Web Service** with build `npm install`
-   and start `npm start`.
-3. In the service's **Environment** tab, set `ADMIN_PASSWORD` to your password.
-4. Open the given `https://…onrender.com/` URL. WebSockets work over `wss://`
-   automatically.
+2. On [netlify.com](https://netlify.com): **Add new site → Import an existing
+   project**, pick the repo. Netlify reads `netlify.toml`, so leave the build
+   settings as detected (build `npm install`, publish `public`, functions
+   `netlify/functions`). If the site was created earlier with different
+   settings, clear any "Publish directory" / "Build command" overrides in
+   **Site configuration → Build & deploy** so they match `netlify.toml`.
+3. In **Site configuration → Environment variables**, add `ADMIN_PASSWORD`.
+4. Deploy, then open the `https://…netlify.app/` URL.
 
-**Data persistence:** free tiers use an *ephemeral* disk, so `data/db.json`
-(your services and report history) resets whenever the server restarts. To keep
-it, attach a persistent disk/volume and point `QUEUE_DB_PATH` at it (see the
-commented block in `render.yaml`; Railway and Fly.io offer free volumes).
+### Option B — Render / Railway / Fly.io (persistent server)
+
+These run the app as a normal long-lived server (`npm start`), which keeps
+instant updates instead of polling and stores data in a file.
+
+1. Push to GitHub.
+2. On [render.com](https://render.com): **New → Blueprint** (reads
+   `render.yaml`), or **New → Web Service** with build `npm install` / start
+   `npm start`.
+3. Set `ADMIN_PASSWORD` in the service's environment.
+4. Open the `https://…onrender.com/` URL.
+
+On free tiers the disk is *ephemeral*, so data resets on restart — attach a
+persistent disk/volume and point `QUEUE_DB_PATH` at it (see `render.yaml`).
 
 ## How it works
 

@@ -72,11 +72,13 @@ function setupSound() {
     }
     updateSoundBtn();
   });
-  // Any interaction re-arms the audio context after a programmatic reload.
   document.addEventListener('pointerdown', () => { if (soundOn) ensureAudio(); }, { once: true });
 }
 
-// ---- Board updates ----
+// ---- Board updates via polling ----
+
+const POLL_MS = 2000;
+let prev = null; // { [serviceId]: { [deskNumber]: { current, pulse } } }
 
 function deskEl(serviceId, deskNumber) {
   return document.querySelector(
@@ -91,12 +93,54 @@ function flashDesk(el) {
   el.classList.add('flash');
 }
 
-function applyCall(msg) {
-  const el = deskEl(msg.id, msg.deskNumber);
-  if (!el) return;
-  el.querySelector('.desk-token').textContent = msg.token || '—';
-  flashDesk(el);
-  playCall();
+// Signature of the rendered structure vs. fetched data, so we reload only when
+// services/desks are added or removed (not on every token change).
+function dataSignature(services) {
+  return services.map(s => `${s.id}:${s.deskCount}`).sort().join('|');
+}
+
+function domSignature() {
+  return [...document.querySelectorAll('.board-card')]
+    .map(c => `${c.dataset.id}:${c.querySelectorAll('.board-desk').length}`)
+    .sort()
+    .join('|');
+}
+
+async function poll() {
+  let services;
+  try {
+    services = await (await fetch('/api/services')).json();
+  } catch {
+    return;
+  }
+
+  if (dataSignature(services) !== domSignature()) {
+    location.reload();
+    return;
+  }
+
+  const next = {};
+  services.forEach(s => {
+    next[s.id] = {};
+    s.desks.forEach(d => {
+      next[s.id][d.number] = { current: d.current, pulse: d.pulse };
+      if (!prev) return;
+      const p = prev[s.id] && prev[s.id][d.number];
+      const el = deskEl(s.id, d.number);
+      if (!el || !p) return;
+      if (d.current !== p.current) {
+        el.querySelector('.desk-token').textContent = d.current || '—';
+        if (d.current > p.current) {
+          flashDesk(el);
+          playCall();
+        }
+      } else if (d.pulse !== p.pulse) {
+        flashDesk(el);
+        playRecall();
+      }
+    });
+  });
+  prev = next;
 }
 
 function tickClock() {
@@ -110,24 +154,8 @@ function tickClock() {
   });
 }
 
-function connectWs() {
-  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
-  const ws = new WebSocket(`${proto}://${location.host}/ws`);
-  ws.onmessage = event => {
-    const msg = JSON.parse(event.data);
-    if (msg.type === 'call') {
-      applyCall(msg);
-    } else if (msg.type === 'recall') {
-      flashDesk(deskEl(msg.id, msg.deskNumber));
-      playRecall();
-    } else if (msg.type === 'services-updated') {
-      location.reload();
-    }
-  };
-  ws.onclose = () => setTimeout(connectWs, 2000);
-}
-
 setupSound();
 tickClock();
 setInterval(tickClock, 1000);
-connectWs();
+poll();
+setInterval(poll, POLL_MS);
