@@ -260,6 +260,31 @@ body {
   line-height: 1.25;
 }
 
+.svc-serving {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.svc-serving-num {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--svc);
+}
+
+.svc-serving-num.flash {
+  animation: serving-flash 0.6s ease;
+}
+
+@keyframes serving-flash {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+
 /* ---------- Empty state ---------- */
 
 .empty {
@@ -283,14 +308,46 @@ body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   max-width: calc(100% - 32px);
-  padding: 12px 12px 12px 26px;
+  padding: 12px 12px 12px 14px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;
   box-shadow: var(--shadow-lg);
   z-index: 15;
+}
+
+.confirm-close {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+.confirm-close svg {
+  display: block;
+}
+
+.confirm-close:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+.confirm-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .confirm-text {
@@ -303,6 +360,17 @@ body {
 
 .confirm-text strong {
   color: var(--text);
+}
+
+.confirm-next {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.confirm-next strong {
+  color: var(--accent);
+  font-weight: 800;
 }
 
 .confirm-btn {

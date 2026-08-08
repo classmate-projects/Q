@@ -18,15 +18,26 @@
       <p class="empty">No services available right now.</p>
     <% } else { %>
       <% services.forEach(function (service) { %>
-        <button class="grid-item" data-id="<%= service.id %>" style="--svc: var(--cat-<%= service.colorIndex %>)">
+        <button class="grid-item" data-id="<%= service.id %>" data-next="<%= service.issued + 1 %>" style="--svc: var(--cat-<%= service.colorIndex %>)">
           <span class="svc-avatar svc-ink"><%= service.name.trim().charAt(0).toUpperCase() %></span>
           <span class="service-name"><%= service.name %></span>
+          <span class="svc-serving">Now serving
+            <strong class="svc-serving-num" data-serving><%= service.lastCalled ? '#' + service.lastCalled : '—' %></strong>
+          </span>
         </button>
       <% }) %>
     <% } %>
   </main>
   <div id="confirm-bar" class="confirm-bar hidden">
-    <span class="confirm-text">Selected: <strong id="selected-name"></strong></span>
+    <button type="button" id="confirm-close" class="confirm-close" aria-label="Cancel">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+        <path d="M6 6 L18 18 M18 6 L6 18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <div class="confirm-info">
+      <span class="confirm-text">Selected: <strong id="selected-name"></strong></span>
+      <span class="confirm-next">Your token will be <strong id="next-token">#—</strong></span>
+    </div>
     <button type="button" id="confirm-btn" class="confirm-btn">OK</button>
   </div>
   <div id="toast" class="toast hidden"></div>
