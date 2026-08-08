@@ -1,23 +1,28 @@
 const os = require('os');
 const path = require('path');
 const fs = require('fs/promises');
+const { createClient } = require('@supabase/supabase-js');
 const { todayStr } = require('./util');
 
-// Are we in a serverless (AWS Lambda / Netlify Functions) runtime? Netlify's
-// `NETLIFY` env var is only set at BUILD time, not at function runtime, so we
-// detect the Lambda runtime instead (LAMBDA_TASK_ROOT=/var/task). There the
-// filesystem is read-only except the OS temp dir, and Netlify Blobs is
-// available once connectLambda() has run in the handler.
-const SERVERLESS =
-  !!process.env.LAMBDA_TASK_ROOT ||
-  !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
-  !!process.env.NETLIFY_DEV;
-const BLOB_STORE = 'q-data';
-const BLOB_KEY = 'db';
+// Persistence: use Supabase (a hosted Postgres DB) when configured, otherwise a
+// local JSON file so `npm start` works with no setup. The whole app state
+// ({ services, tokens }) is stored as one JSON document in the `queue_state`
+// table (row id = 'main').
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY =
+  process.env.SUPABASE_KEY ||
+  process.env.SUPABASE_SECRET_KEY ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY ||
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_KEY);
+
+const TABLE = 'queue_state';
+const ROW_ID = 'main';
 const EMPTY = { services: [], tokens: [] };
 
-// File fallback location: a fixed path if set, the OS temp dir in a serverless
-// runtime (the only writable place), or the project's data/ dir locally.
+// File fallback location (only used when Supabase isn't configured): the OS temp
+// dir in a serverless runtime (the only writable place), else the project data/ dir.
+const SERVERLESS = !!process.env.LAMBDA_TASK_ROOT || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
 const FILE =
   process.env.QUEUE_DB_PATH ||
   (SERVERLESS ? path.join(os.tmpdir(), 'q-db.json') : path.join(__dirname, '..', 'data', 'db.json'));
@@ -48,27 +53,19 @@ function normalize(data) {
   return s;
 }
 
-let getStoreFn = null;
-async function getBlobStore() {
-  if (!SERVERLESS) return null;
-  try {
-    if (!getStoreFn) ({ getStore: getStoreFn } = await import('@netlify/blobs'));
-    // Create the store per call so it picks up the current request's Blobs
-    // context (wired up by connectLambda in the function handler).
-    return getStoreFn({ name: BLOB_STORE, consistency: 'strong' });
-  } catch {
-    return null; // Blobs unavailable this request -> use the file fallback
-  }
+let client = null;
+function supabase() {
+  if (!client) client = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+  return client;
 }
 
 async function read() {
-  const store = await getBlobStore();
-  if (store) {
-    try {
-      return normalize((await store.get(BLOB_KEY, { type: 'json' })) || EMPTY);
-    } catch {
-      // Blobs unreachable -> fall through to the file so read/write stay consistent
-    }
+  if (USE_SUPABASE) {
+    const { data, error } = await supabase().from(TABLE).select('data').eq('id', ROW_ID).maybeSingle();
+    // Throw on a real query error (don't silently return empty — a later write
+    // would then wipe existing data). A missing row is fine (first run).
+    if (error) throw new Error(`Supabase read failed: ${error.message}`);
+    return normalize(data ? data.data : EMPTY);
   }
   try {
     return normalize(JSON.parse(await fs.readFile(FILE, 'utf-8')));
@@ -78,14 +75,12 @@ async function read() {
 }
 
 async function write(state) {
-  const store = await getBlobStore();
-  if (store) {
-    try {
-      await store.setJSON(BLOB_KEY, state);
-      return;
-    } catch {
-      // Blobs write failed -> fall through to the file instead of crashing
-    }
+  if (USE_SUPABASE) {
+    const { error } = await supabase()
+      .from(TABLE)
+      .upsert({ id: ROW_ID, data: state, updated_at: new Date().toISOString() });
+    if (error) throw new Error(`Supabase write failed: ${error.message}`);
+    return;
   }
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(state, null, 2));

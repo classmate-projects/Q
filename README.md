@@ -68,27 +68,43 @@ pages so the server-rendered markup stays the source of truth.
 The app can be deployed two ways. **The code auto-detects where it runs** — no
 edits needed.
 
-### Option A — Netlify (serverless)
+### Option A — Netlify (serverless) + Supabase
 
-`netlify.toml` runs the whole app as one serverless function, serves the
-CSS/JS statically, and stores data in **Netlify Blobs** (which persists across
-restarts, unlike a function's disk). Live updates use a ~2-second poll instead
-of WebSockets (serverless can't hold sockets open).
+`netlify.toml` runs the whole app as one serverless function and serves the
+CSS/JS statically. Data persists to **Supabase** (a hosted Postgres database),
+stored as one JSON document in a `queue_state` table. Live updates use a
+~2-second poll instead of WebSockets (serverless can't hold sockets open).
 
-1. Push this repo to GitHub.
-2. On [netlify.com](https://netlify.com): **Add new site → Import an existing
+1. **Create the database.** In [supabase.com](https://supabase.com), create a
+   project, open **SQL Editor**, paste the contents of
+   [`supabase/schema.sql`](supabase/schema.sql), and run it.
+2. **Get your keys.** In Supabase → **Project Settings → API**, copy the
+   **Project URL** and the **secret** API key (starts with `sb_secret_…`, not
+   the publishable one — the server needs full access and the table is locked
+   with RLS).
+3. Push this repo to GitHub.
+4. On [netlify.com](https://netlify.com): **Add new site → Import an existing
    project**, pick the repo. Netlify reads `netlify.toml`, so leave the build
    settings as detected (build `npm install`, publish `public`, functions
    `netlify/functions`). If the site was created earlier with different
    settings, clear any "Publish directory" / "Build command" overrides in
-   **Site configuration → Build & deploy** so they match `netlify.toml`.
-3. In **Site configuration → Environment variables**, add `ADMIN_PASSWORD`.
-4. Deploy, then open the `https://…netlify.app/` URL.
+   **Site configuration → Build & deploy**.
+5. In **Site configuration → Environment variables**, add:
+   - `ADMIN_PASSWORD` — your admin password
+   - `SUPABASE_URL` — the Project URL
+   - `SUPABASE_KEY` — the secret key
+6. Deploy, then open the `https://…netlify.app/` URL. Add a service in Admin,
+   then check **Supabase → Table Editor → queue_state** to confirm it saved.
+
+If `SUPABASE_URL`/`SUPABASE_KEY` are not set, the app falls back to a local
+JSON file (fine for `npm start`, but not persistent on serverless).
 
 ### Option B — Render / Railway / Fly.io (persistent server)
 
 These run the app as a normal long-lived server (`npm start`), which keeps
-instant updates instead of polling and stores data in a file.
+instant updates instead of polling. Set `SUPABASE_URL`/`SUPABASE_KEY` for
+persistent storage (recommended — free-tier disks are ephemeral); otherwise it
+uses a local file.
 
 1. Push to GitHub.
 2. On [render.com](https://render.com): **New → Blueprint** (reads
