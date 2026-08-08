@@ -15,8 +15,40 @@ async function checkAuth() {
 function showAdmin() {
   loginSection.classList.add('hidden');
   adminSection.classList.remove('hidden');
-  document.getElementById('report-date').value = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  document.getElementById('report-date').value =
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   loadServices();
+  loadSubscription();
+}
+
+async function loadSubscription() {
+  const banner = document.getElementById('sub-banner');
+  if (!banner) return;
+  let s;
+  try {
+    const res = await fetch('/api/admin/subscription');
+    if (!res.ok) return;
+    s = await res.json();
+  } catch (err) {
+    return;
+  }
+
+  banner.classList.remove('hidden', 'warn');
+  if (s.plan === 'pro') {
+    const n = s.daysRemaining === 1 ? '1 day' : `${s.daysRemaining} days`;
+    if (s.nearExpiry) {
+      banner.classList.add('warn');
+      banner.innerHTML =
+        `<strong>⚠️ Pro subscription expiring soon.</strong> ` +
+        `${n} remaining (expires ${escapeHtml(s.expiryDate)}). Please contact the administrator to renew.`;
+    } else {
+      banner.innerHTML =
+        `<strong>Pro subscription.</strong> ${n} remaining (expires ${escapeHtml(s.expiryDate)}).`;
+    }
+  } else {
+    banner.innerHTML = `<strong>Free plan.</strong> Contact the administrator to upgrade to Pro.`;
+  }
 }
 
 document.getElementById('login-form').addEventListener('submit', async e => {
