@@ -3,20 +3,24 @@ const path = require('path');
 const fs = require('fs/promises');
 const { todayStr } = require('./util');
 
-// On a deployed Netlify site we persist to Netlify Blobs (the function
-// filesystem is read-only/ephemeral). Everywhere else — plain `node server.js`,
-// or `netlify dev` without a linked site — we fall back to a JSON file so it
-// works with no setup.
-const ON_NETLIFY = process.env.NETLIFY === 'true' || !!process.env.NETLIFY_DEV;
+// Are we in a serverless (AWS Lambda / Netlify Functions) runtime? Netlify's
+// `NETLIFY` env var is only set at BUILD time, not at function runtime, so we
+// detect the Lambda runtime instead (LAMBDA_TASK_ROOT=/var/task). There the
+// filesystem is read-only except the OS temp dir, and Netlify Blobs is
+// available once connectLambda() has run in the handler.
+const SERVERLESS =
+  !!process.env.LAMBDA_TASK_ROOT ||
+  !!process.env.AWS_LAMBDA_FUNCTION_NAME ||
+  !!process.env.NETLIFY_DEV;
 const BLOB_STORE = 'q-data';
 const BLOB_KEY = 'db';
 const EMPTY = { services: [], tokens: [] };
 
-// Where the file fallback lives: a fixed path if set, the project's data/ dir
-// locally, or the OS temp dir when running on Netlify without Blobs.
+// File fallback location: a fixed path if set, the OS temp dir in a serverless
+// runtime (the only writable place), or the project's data/ dir locally.
 const FILE =
   process.env.QUEUE_DB_PATH ||
-  (ON_NETLIFY ? path.join(os.tmpdir(), 'q-db.json') : path.join(__dirname, '..', 'data', 'db.json'));
+  (SERVERLESS ? path.join(os.tmpdir(), 'q-db.json') : path.join(__dirname, '..', 'data', 'db.json'));
 
 // Normalize/migrate the persisted shape so older data keeps working and every
 // read returns a consistent structure (desks are { current, pulse } objects).
@@ -46,7 +50,7 @@ function normalize(data) {
 
 let getStoreFn = null;
 async function getBlobStore() {
-  if (!ON_NETLIFY) return null;
+  if (!SERVERLESS) return null;
   try {
     if (!getStoreFn) ({ getStore: getStoreFn } = await import('@netlify/blobs'));
     // Create the store per call so it picks up the current request's Blobs
