@@ -4,7 +4,7 @@ const app = require('./app');
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Q token system running at http://localhost:${PORT}`);
+  console.log(`YourQ running at http://localhost:${PORT}`);
   console.log(`  Home page:     http://localhost:${PORT}/`);
   console.log(`  Customer page: http://localhost:${PORT}/customer`);
   console.log(`  Display page:  http://localhost:${PORT}/display`);

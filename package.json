@@ -1,8 +1,8 @@
 {
-  "name": "q-token-system",
+  "name": "yourq",
   "version": "1.0.0",
   "private": true,
-  "description": "Simple token queue display system for service counters",
+  "description": "YourQ — simple token queue system for service counters",
   "main": "server.js",
   "engines": {
     "node": ">=18"

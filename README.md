@@ -1,4 +1,4 @@
-# Q — Service Token Queue System
+# YourQ — Service Token Queue System
 
 A simple token queue system for service counters. Customers take a token for a
 service; staff at one or more desks call tokens in order; and a "Now Serving"
