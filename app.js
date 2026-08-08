@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cookieParser = require('cookie-parser');
+const ejs = require('ejs');
 
 const db = require('./src/db');
 const auth = require('./src/auth');
@@ -19,6 +20,10 @@ function resolveDir(name) {
 }
 
 const app = express();
+// Register the EJS engine explicitly (with a static require above) so the
+// serverless bundler includes ejs and Express never does its dynamic
+// `require('ejs')` at render time, which fails in a bundled function.
+app.engine('ejs', ejs.__express);
 app.set('view engine', 'ejs');
 app.set('views', resolveDir('views'));
 
