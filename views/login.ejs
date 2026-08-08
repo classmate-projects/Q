@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Log In · YourQ</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="page-header">
+    <h1>YourQ</h1>
+    <p class="subtitle">Enter the password to continue</p>
+  </header>
+
+  <section class="panel">
+    <form id="login-form">
+      <label for="password">Password</label>
+      <input type="password" id="password" required autocomplete="current-password" autofocus>
+      <button type="submit">Log In</button>
+      <p id="login-error" class="error hidden"></p>
+    </form>
+    <div class="admin-contact">
+      <span class="admin-contact-label">Need help? Contact</span>
+      <a href="mailto:classmate20240425@gmail.com">✉️ classmate20240425@gmail.com</a>
+      <a href="https://wa.me/971566608834" target="_blank" rel="noopener">💬 WhatsApp +971 56 660 8834</a>
+    </div>
+  </section>
+
+  <script>
+    var NEXT = <%- JSON.stringify(next) %>;
+    document.getElementById('login-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        window.location.href = NEXT;
+      } else {
+        const err = document.getElementById('login-error');
+        err.textContent = 'Incorrect password';
+        err.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

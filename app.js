@@ -32,46 +32,63 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(resolveDir('public')));
 
-// ---- Pages (server-rendered) ----
+// ---- Login gate (unprotected) ----
 
-app.get('/', (req, res) => res.render('home'));
+// Every page and API below is protected by the admin password. Unauthenticated
+// visitors land here (via requirePage) and are returned to their original
+// destination after logging in.
+app.get('/login', (req, res) => {
+  if (auth.isAuthed(req)) return res.redirect(auth.safeNext(req.query.next));
+  res.render('login', { next: auth.safeNext(req.query.next) });
+});
 
-app.get('/customer', async (req, res) => {
+app.post('/api/admin/login', (req, res) => {
+  const token = auth.login(req.body.password || '');
+  if (!token) return res.status(401).json({ error: 'Invalid password' });
+  res.cookie(auth.COOKIE_NAME, token, { httpOnly: true, sameSite: 'lax' });
+  res.json({ ok: true });
+});
+
+// ---- Pages (server-rendered, password-protected) ----
+
+app.get('/', auth.requirePage, (req, res) => res.render('home'));
+
+app.get('/customer', auth.requirePage, async (req, res) => {
   res.render('index', { services: await db.listServices() });
 });
 
-app.get('/display', async (req, res) => {
+app.get('/display', auth.requirePage, async (req, res) => {
   res.render('display', { services: await db.listServices() });
 });
 
-app.get('/desk', async (req, res) => {
+app.get('/desk', auth.requirePage, async (req, res) => {
   res.render('desk', { services: await db.listServices() });
 });
 
-app.get('/admin', (req, res) => res.render('admin'));
+app.get('/admin', auth.requirePage, (req, res) => res.render('admin'));
 
-// ---- Public API (customer + display + desk pages) ----
+// ---- API (customer + display + desk pages, password-protected) ----
 
-app.get('/api/services', async (req, res) => {
+app.get('/api/services', auth.requireAuth, async (req, res) => {
   res.json(await db.listServices());
 });
 
 // A customer takes a token (joins the queue).
-app.post('/api/services/:id/token', async (req, res) => {
+app.post('/api/services/:id/token', auth.requireAuth, async (req, res) => {
   const result = await db.takeToken(req.params.id);
   if (!result) return res.status(404).json({ error: 'Service not found' });
   res.json(result);
 });
 
 // A desk calls the next waiting token (FIFO).
-app.post('/api/services/:id/desks/:desk/call', async (req, res) => {
+app.post('/api/services/:id/desks/:desk/call', auth.requireAuth, async (req, res) => {
   const result = await db.callNext(req.params.id, parseInt(req.params.desk, 10));
   if (!result) return res.status(404).json({ error: 'Service or desk not found' });
   res.json(result);
 });
 
 // A desk re-announces the token it is already serving.
-app.post('/api/services/:id/desks/:desk/recall', async (req, res) => {
+app.post('/api/services/:id/desks/:desk/recall', auth.requireAuth, async (req, res) => {
   const result = await db.recall(req.params.id, parseInt(req.params.desk, 10));
   if (!result) return res.status(404).json({ error: 'Service or desk not found' });
   res.json(result);
@@ -80,7 +97,7 @@ app.post('/api/services/:id/desks/:desk/recall', async (req, res) => {
 // Desk page only: whether to show the "subscription nearing expiry" reminder.
 // Also runs the daily subscription evaluation (auto-downgrade). Deliberately
 // exposes no plan/date details to the customer/display pages.
-app.get('/api/desk-alert', async (req, res) => {
+app.get('/api/desk-alert', auth.requireAuth, async (req, res) => {
   try {
     const s = await subscription.getStatus();
     res.json({ show: s.nearExpiry, daysRemaining: s.daysRemaining, today: s.today });
@@ -90,13 +107,6 @@ app.get('/api/desk-alert', async (req, res) => {
 });
 
 // ---- Admin auth ----
-
-app.post('/api/admin/login', (req, res) => {
-  const token = auth.login(req.body.password || '');
-  if (!token) return res.status(401).json({ error: 'Invalid password' });
-  res.cookie(auth.COOKIE_NAME, token, { httpOnly: true, sameSite: 'lax' });
-  res.json({ ok: true });
-});
 
 app.post('/api/admin/logout', auth.requireAuth, (req, res) => {
   res.clearCookie(auth.COOKIE_NAME);

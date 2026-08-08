@@ -1,20 +1,10 @@
-const loginSection = document.getElementById('login-section');
-const adminSection = document.getElementById('admin-section');
-
 function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
 }
 
-async function checkAuth() {
-  const res = await fetch('/api/admin/check');
-  if (res.ok) showAdmin();
-}
-
 function showAdmin() {
-  loginSection.classList.add('hidden');
-  adminSection.classList.remove('hidden');
   const now = new Date();
   document.getElementById('report-date').value =
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -50,23 +40,6 @@ async function loadSubscription() {
     banner.innerHTML = `<strong>Free plan.</strong> Contact the administrator to upgrade to Pro.`;
   }
 }
-
-document.getElementById('login-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const password = document.getElementById('password').value;
-  const res = await fetch('/api/admin/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password }),
-  });
-  if (res.ok) {
-    showAdmin();
-  } else {
-    const err = document.getElementById('login-error');
-    err.textContent = 'Incorrect password';
-    err.classList.remove('hidden');
-  }
-});
 
 document.getElementById('logout-btn').addEventListener('click', async () => {
   await fetch('/api/admin/logout', { method: 'POST' });
@@ -152,4 +125,4 @@ async function deleteService(id) {
   loadServices();
 }
 
-checkAuth();
+showAdmin();
