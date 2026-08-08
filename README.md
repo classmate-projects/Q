@@ -59,6 +59,30 @@ pages so the server-rendered markup stays the source of truth.
    machine, other devices on the same WiFi network can reach it too using your
    computer's local IP instead of `localhost` (e.g. `http://192.168.1.23:3000/`).
 
+## Hosting it online
+
+This is a **live Node server** (server-rendered pages + WebSockets + a file
+database), so it must run on a host that keeps a Node process alive. **Static
+hosts like Netlify or GitHub Pages will not work** — they only serve static
+files, so the base URL returns "Page not found" and live updates never connect.
+
+Use a host that runs `npm start`, e.g. **Render**, **Railway**, or **Fly.io**.
+The app already reads `process.env.PORT` and needs no code changes.
+
+**Render (quickest):**
+1. Push this repo to GitHub.
+2. On [render.com](https://render.com): **New → Blueprint**, pick the repo
+   (it reads `render.yaml`). Or **New → Web Service** with build `npm install`
+   and start `npm start`.
+3. In the service's **Environment** tab, set `ADMIN_PASSWORD` to your password.
+4. Open the given `https://…onrender.com/` URL. WebSockets work over `wss://`
+   automatically.
+
+**Data persistence:** free tiers use an *ephemeral* disk, so `data/db.json`
+(your services and report history) resets whenever the server restarts. To keep
+it, attach a persistent disk/volume and point `QUEUE_DB_PATH` at it (see the
+commented block in `render.yaml`; Railway and Fly.io offer free volumes).
+
 ## How it works
 
 - **Two counters per service, per day.** *Issued* counts tokens customers have

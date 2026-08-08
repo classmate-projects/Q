@@ -1,0 +1,31 @@
+# Render Blueprint — deploys the Q token system as a live Node web service.
+# https://render.com  →  New  →  Blueprint  →  connect this repo.
+#
+# Render supports WebSockets and sets PORT automatically, so no code changes
+# are needed. After the first deploy, set ADMIN_PASSWORD in the dashboard
+# (Environment tab) to your own password.
+services:
+  - type: web
+    name: q-token-system
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ADMIN_PASSWORD
+        sync: false # set this in the Render dashboard, not in the repo
+
+    # --- Optional: keep data across restarts/redeploys ---
+    # The free plan has an EPHEMERAL disk, so data/db.json (services + the
+    # daily report history) resets whenever the server restarts. To keep it,
+    # switch to a paid instance and attach a persistent disk:
+    #
+    # disk:
+    #   name: data
+    #   mountPath: /data
+    #   sizeGB: 1
+    # envVars:
+    #   - key: ADMIN_PASSWORD
+    #     sync: false
+    #   - key: QUEUE_DB_PATH
+    #     value: /data/db.json
