@@ -9,7 +9,10 @@
 <body class="display-body">
   <header class="display-header">
     <h1>Now Serving</h1>
-    <span id="clock" class="clock"></span>
+    <div class="display-header-right">
+      <button type="button" id="sound-toggle" class="sound-toggle off">🔔 Enable sound</button>
+      <span id="clock" class="clock"></span>
+    </div>
   </header>
   <main id="board" class="board">
     <% if (services.length === 0) { %>

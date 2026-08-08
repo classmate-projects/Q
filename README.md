@@ -14,7 +14,10 @@ how many customers arrived per service.
 - **Now Serving board** — `http://localhost:3000/display` — open on a screen in
   the waiting area. For each service it shows every desk and the token that desk
   is currently calling. Updates instantly (WebSocket) whenever a desk calls or
-  recalls a token.
+  recalls a token. It also chimes: a two-tone "ding-dong" when a new token is
+  called and a distinct triple-beep on a recall. Click **Enable sound** once
+  (top-right) to allow audio — browsers block sound until you interact with the
+  page.
 - **Desk control** — `http://localhost:3000/desk` — for staff. Pick a service and
   you'll see all of its desks, each with **Call Next** and **Recall**:
   - **Call Next** serves the next waiting token (FIFO). A desk can't call past
