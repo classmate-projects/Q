@@ -44,20 +44,17 @@ function normalize(data) {
   return s;
 }
 
-let blobStore = null;
-let blobTried = false;
+let getStoreFn = null;
 async function getBlobStore() {
   if (!ON_NETLIFY) return null;
-  if (!blobTried) {
-    blobTried = true;
-    try {
-      const { getStore } = await import('@netlify/blobs');
-      blobStore = getStore({ name: BLOB_STORE, consistency: 'strong' });
-    } catch {
-      blobStore = null; // Blobs env not configured -> use the file fallback
-    }
+  try {
+    if (!getStoreFn) ({ getStore: getStoreFn } = await import('@netlify/blobs'));
+    // Create the store per call so it picks up the current request's Blobs
+    // context (wired up by connectLambda in the function handler).
+    return getStoreFn({ name: BLOB_STORE, consistency: 'strong' });
+  } catch {
+    return null; // Blobs unavailable this request -> use the file fallback
   }
-  return blobStore;
 }
 
 async function read() {
@@ -66,7 +63,7 @@ async function read() {
     try {
       return normalize((await store.get(BLOB_KEY, { type: 'json' })) || EMPTY);
     } catch {
-      return normalize(EMPTY);
+      // Blobs unreachable -> fall through to the file so read/write stay consistent
     }
   }
   try {
@@ -79,8 +76,12 @@ async function read() {
 async function write(state) {
   const store = await getBlobStore();
   if (store) {
-    await store.setJSON(BLOB_KEY, state);
-    return;
+    try {
+      await store.setJSON(BLOB_KEY, state);
+      return;
+    } catch {
+      // Blobs write failed -> fall through to the file instead of crashing
+    }
   }
   await fs.mkdir(path.dirname(FILE), { recursive: true });
   await fs.writeFile(FILE, JSON.stringify(state, null, 2));
