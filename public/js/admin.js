@@ -25,19 +25,24 @@ async function loadSubscription() {
   }
 
   banner.classList.remove('hidden', 'warn');
-  if (s.plan === 'pro') {
+  if (s.plan === 'paid') {
     const n = s.daysRemaining === 1 ? '1 day' : `${s.daysRemaining} days`;
-    if (s.nearExpiry) {
+    if (s.expiryDate && s.nearExpiry) {
       banner.classList.add('warn');
       banner.innerHTML =
-        `<strong>⚠️ Pro subscription expiring soon.</strong> ` +
+        `<strong>⚠️ Paid subscription expiring soon.</strong> ` +
         `${n} remaining (expires ${escapeHtml(s.expiryDate)}). Please contact the administrator to renew.`;
-    } else {
+    } else if (s.expiryDate) {
       banner.innerHTML =
-        `<strong>Pro subscription.</strong> ${n} remaining (expires ${escapeHtml(s.expiryDate)}).`;
+        `<strong>Paid subscription.</strong> ${n} remaining (expires ${escapeHtml(s.expiryDate)}).`;
+    } else {
+      banner.innerHTML = `<strong>Paid subscription.</strong> All services and unlimited daily tokens are enabled.`;
     }
   } else {
-    banner.innerHTML = `<strong>Free plan.</strong> Contact the administrator to upgrade to Pro.`;
+    banner.classList.add('warn');
+    banner.innerHTML =
+      `<strong>Free plan.</strong> Limited to 2 services and 10 tokens per service each day. ` +
+      `Extra services are shown as disabled below. Contact the administrator to upgrade.`;
   }
 }
 
@@ -78,11 +83,14 @@ async function loadServices() {
   list.innerHTML = '';
   services.forEach(service => {
     const li = document.createElement('li');
-    li.className = 'service-list-item';
+    li.className = 'service-list-item' + (service.planDisabled ? ' plan-disabled' : '');
     li.style.setProperty('--svc', `var(--cat-${service.colorIndex})`);
     li.innerHTML =
       `<span class="svc-dot"></span>` +
-      `<span class="svc-label">${escapeHtml(service.name)}</span>`;
+      `<span class="svc-label">${escapeHtml(service.name)}</span>` +
+      (service.planDisabled
+        ? `<span class="plan-badge">Disabled · Free plan</span>`
+        : '');
 
     const desksField = document.createElement('label');
     desksField.className = 'desk-count-field';

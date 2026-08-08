@@ -32,7 +32,15 @@ async function confirmSelection() {
   confirmBtn.disabled = true;
   try {
     const res = await fetch(`/api/services/${id}/token`, { method: 'POST' });
-    if (!res.ok) throw new Error('Failed');
+    if (!res.ok) {
+      let msg = 'Something went wrong. Please try again.';
+      try {
+        const e = await res.json();
+        if (e && e.error) msg = e.error;
+      } catch {}
+      showToast(msg, true);
+      return;
+    }
     const data = await res.json();
     showToast(`${data.name}: Your token is #${data.token}`);
     clearSelection();
@@ -97,6 +105,11 @@ async function pollServing() {
     // Keep the "next token to be issued" figure current for this tile.
     tile.dataset.next = service.issued + 1;
     if (selectedTile === tile) nextToken.textContent = nextTokenText(tile);
+
+    // Reflect the plan's per-service daily cap: disable a tile once it's full.
+    tile.classList.toggle('full', !!service.full);
+    tile.disabled = !!service.full;
+    if (service.full && selectedTile === tile) clearSelection();
 
     const num = tile.querySelector('.svc-serving-num');
     if (!num) return;

@@ -242,6 +242,31 @@ body {
   transform: none;
 }
 
+.grid-item.full {
+  opacity: 1;
+}
+
+.grid-item.full .svc-avatar,
+.grid-item.full .service-name,
+.grid-item.full .svc-serving {
+  opacity: 0.45;
+}
+
+.grid-item.full::after {
+  content: "Daily limit reached";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  color: var(--danger);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-align: center;
+}
+
 .svc-avatar {
   display: grid;
   place-items: center;
@@ -849,6 +874,26 @@ button:active {
 .service-list-item .svc-label {
   flex: 1;
   font-weight: 600;
+}
+
+.service-list-item.plan-disabled {
+  border-style: dashed;
+  background: var(--surface-2);
+}
+
+.service-list-item.plan-disabled .svc-label {
+  color: var(--text-muted);
+}
+
+.plan-badge {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  color: var(--danger);
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .delete-btn {

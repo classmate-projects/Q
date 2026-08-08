@@ -54,15 +54,18 @@ app.post('/api/admin/login', (req, res) => {
 app.get('/', auth.requirePage, (req, res) => res.render('home'));
 
 app.get('/customer', auth.requirePage, async (req, res) => {
-  res.render('index', { services: await db.listServices() });
+  const limits = await subscription.getLimits();
+  res.render('index', { services: await db.listServices({ enabledOnly: true, limits }) });
 });
 
 app.get('/display', auth.requirePage, async (req, res) => {
-  res.render('display', { services: await db.listServices() });
+  const limits = await subscription.getLimits();
+  res.render('display', { services: await db.listServices({ enabledOnly: true, limits }) });
 });
 
 app.get('/desk', auth.requirePage, async (req, res) => {
-  res.render('desk', { services: await db.listServices() });
+  const limits = await subscription.getLimits();
+  res.render('desk', { services: await db.listServices({ enabledOnly: true, limits }) });
 });
 
 app.get('/admin', auth.requirePage, (req, res) => res.render('admin'));
@@ -70,14 +73,34 @@ app.get('/admin', auth.requirePage, (req, res) => res.render('admin'));
 // ---- API (customer + display + desk pages, password-protected) ----
 
 app.get('/api/services', auth.requireAuth, async (req, res) => {
-  res.json(await db.listServices());
+  const limits = await subscription.getLimits();
+  res.json(await db.listServices({ enabledOnly: true, limits }));
 });
 
-// A customer takes a token (joins the queue).
+// A customer takes a token (joins the queue). Gated by the plan's per-service
+// daily cap and service limit (Free plan).
 app.post('/api/services/:id/token', auth.requireAuth, async (req, res) => {
-  const result = await db.takeToken(req.params.id);
-  if (!result) return res.status(404).json({ error: 'Service not found' });
-  res.json(result);
+  const limits = await subscription.getLimits();
+  const result = await db.takeToken(req.params.id, limits);
+  if (result.ok) {
+    return res.json({ id: result.id, name: result.name, token: result.token, waiting: result.waiting });
+  }
+  if (result.reason === 'not_found') {
+    return res.status(404).json({ error: 'Service not found' });
+  }
+  if (result.reason === 'token_limit') {
+    return res.status(403).json({
+      reason: 'token_limit',
+      error: `Daily limit reached — this service has issued its ${result.limit} tokens for today (Free plan). Contact the administrator to upgrade.`,
+    });
+  }
+  if (result.reason === 'service_disabled') {
+    return res.status(403).json({
+      reason: 'service_disabled',
+      error: 'This service is unavailable on the Free plan. Contact the administrator to upgrade.',
+    });
+  }
+  return res.status(400).json({ error: 'Unable to issue token' });
 });
 
 // A desk calls the next waiting token (FIFO).
@@ -127,7 +150,8 @@ app.get('/api/admin/subscription', auth.requireAuth, async (req, res) => {
 // ---- Admin service management ----
 
 app.get('/api/admin/services', auth.requireAuth, async (req, res) => {
-  res.json(await db.listServices());
+  const limits = await subscription.getLimits();
+  res.json(await db.listServices({ limits }));
 });
 
 app.post('/api/admin/services', auth.requireAuth, async (req, res) => {

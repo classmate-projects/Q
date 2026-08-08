@@ -18,7 +18,7 @@
       <p class="empty">No services available right now.</p>
     <% } else { %>
       <% services.forEach(function (service) { %>
-        <button class="grid-item" data-id="<%= service.id %>" data-next="<%= service.issued + 1 %>" style="--svc: var(--cat-<%= service.colorIndex %>)">
+        <button class="grid-item<%= service.full ? ' full' : '' %>" data-id="<%= service.id %>" data-next="<%= service.issued + 1 %>" <%= service.full ? 'disabled' : '' %> style="--svc: var(--cat-<%= service.colorIndex %>)">
           <span class="svc-avatar svc-ink"><%= service.name.trim().charAt(0).toUpperCase() %></span>
           <span class="service-name"><%= service.name %></span>
           <span class="svc-serving">Now serving

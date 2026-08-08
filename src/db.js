@@ -51,9 +51,37 @@ function publicService(service) {
   };
 }
 
-async function listServices({ includeInactive = false } = {}) {
+// The IDs of the services that stay enabled under the given plan limits: the
+// oldest `maxServices` active ones (stable by creation order). Any active
+// service outside this set is treated as temporarily disabled by the plan.
+function enabledServiceIds(state, limits) {
+  const max = limits ? limits.maxServices : Infinity;
+  const active = state.services
+    .filter(s => s.active)
+    .sort((a, b) => String(a.createdAt || '').localeCompare(String(b.createdAt || '')));
+  return new Set(active.slice(0, max).map(s => s.id));
+}
+
+// listServices options:
+//   includeInactive - also return admin-deleted (active:false) services
+//   enabledOnly     - drop services the current plan has disabled (public pages)
+//   limits          - plan limits from subscription.getLimits(); when omitted,
+//                     no plan gating is applied (everything enabled, unlimited)
+// Each returned service gains `planDisabled` (beyond the plan's service limit)
+// and `full` (reached the plan's per-service daily token cap).
+async function listServices({ includeInactive = false, enabledOnly = false, limits = null } = {}) {
   const state = await storage.read();
-  return state.services.filter(s => includeInactive || s.active).map(publicService);
+  const enabledIds = enabledServiceIds(state, limits);
+  const maxTokens = limits ? limits.maxTokensPerService : Infinity;
+  return state.services
+    .filter(s => includeInactive || s.active)
+    .map(s => {
+      const pub = publicService(s);
+      pub.planDisabled = s.active && !enabledIds.has(s.id);
+      pub.full = pub.issued >= maxTokens;
+      return pub;
+    })
+    .filter(s => (enabledOnly ? !s.planDisabled : true));
 }
 
 async function addService(name, deskCount = 1) {
@@ -94,13 +122,26 @@ async function setDeskCount(id, deskCount) {
   return publicService(service);
 }
 
-// A customer takes a token (joins the queue).
-async function takeToken(serviceId) {
+// A customer takes a token (joins the queue). `limits` (from
+// subscription.getLimits) gates issuance under the Free plan. Returns a tagged
+// result: { ok:true, ... } on success, or { ok:false, reason } where reason is
+// 'not_found', 'service_disabled' (beyond the free service limit) or
+// 'token_limit' (reached the per-service daily cap).
+async function takeToken(serviceId, limits = null) {
   const state = await storage.read();
   const service = state.services.find(s => s.id === serviceId && s.active);
-  if (!service) return null;
+  if (!service) return { ok: false, reason: 'not_found' };
+
+  const enabledIds = enabledServiceIds(state, limits);
+  if (!enabledIds.has(service.id)) return { ok: false, reason: 'service_disabled' };
 
   rollDay(service);
+
+  const maxTokens = limits ? limits.maxTokensPerService : Infinity;
+  if (service.issued >= maxTokens) {
+    return { ok: false, reason: 'token_limit', limit: maxTokens };
+  }
+
   service.issued += 1;
   state.tokens.push({
     id: crypto.randomUUID(),
@@ -112,6 +153,7 @@ async function takeToken(serviceId) {
 
   await storage.write(state);
   return {
+    ok: true,
     id: service.id,
     name: service.name,
     token: service.issued,
