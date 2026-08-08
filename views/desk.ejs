@@ -29,6 +29,14 @@
 
   <div id="toast" class="toast hidden"></div>
 
+  <div id="sub-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h3>Subscription reminder</h3>
+      <p id="sub-modal-text"></p>
+      <button type="button" id="sub-modal-close">Got it</button>
+    </div>
+  </div>
+
   <script>window.__SERVICES__ = <%- JSON.stringify(services) %>;</script>
   <script src="/js/desk.js"></script>
 </body>

@@ -121,7 +121,9 @@ persistent disk/volume and point `QUEUE_DB_PATH` at it (see `render.yaml`).
 - **Two counters per service, per day.** *Issued* counts tokens customers have
   taken; *called* is how far the desks have served. Call Next advances *called*
   (up to *issued*) and assigns that token to the calling desk. Both reset
-  automatically at the start of a new day, so the first token each day is `#1`.
+  automatically at **local midnight**, so the first token each day is `#1`. The
+  timezone defaults to `Asia/Dubai` (UTC+4) and is set via the `QUEUE_TIMEZONE`
+  env var — important on serverless hosts, which run in UTC.
 - **Multiple desks.** Each service has a number of desks set in admin. Every desk
   serves from the same FIFO queue but tracks the token it personally called, so
   the board can show "Token 15 → Desk 2".
@@ -132,6 +134,16 @@ persistent disk/volume and point `QUEUE_DB_PATH` at it (see `render.yaml`).
   its history so past daily reports stay accurate.
 - **The daily report** is a CSV download (`Service,Customers Served`) for a date
   you pick, defaulting to today. "Served" counts tokens taken (customers arrived).
+- **Subscription (Free / Pro).** Stored in the Supabase `subscription` table
+  (columns `plan` and `expiry_date`). At the daily boundary — the same local
+  midnight as the token reset — the app re-evaluates it: when a Pro plan's
+  `expiry_date` is reached or passed, it **auto-downgrades to Free** (no manual
+  step). **Upgrading is manual:** the admin sets `plan = 'pro'` and a future
+  `expiry_date` directly on that row in Supabase. Visibility is role-specific:
+  the **Admin** page shows the plan, days remaining, and a renew alert on each
+  login; the **Desk** page shows a single dismissible reminder once per day when
+  expiry is within 7 days; the **customer (kiosk)** and **display board** show
+  nothing about the subscription.
 - **Colors.** Each service gets a distinct color (assigned in creation order)
   used consistently across the customer grid, board, desk page, and admin list.
   Pages are theme-aware and follow the device's light/dark setting.

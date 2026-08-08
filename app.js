@@ -7,6 +7,7 @@ const ejs = require('ejs');
 
 const db = require('./src/db');
 const auth = require('./src/auth');
+const subscription = require('./src/subscription');
 
 // Resolve views/public whether we run locally (node server.js) or bundled inside
 // a Netlify function, where the working directory differs.
@@ -76,6 +77,18 @@ app.post('/api/services/:id/desks/:desk/recall', async (req, res) => {
   res.json(result);
 });
 
+// Desk page only: whether to show the "subscription nearing expiry" reminder.
+// Also runs the daily subscription evaluation (auto-downgrade). Deliberately
+// exposes no plan/date details to the customer/display pages.
+app.get('/api/desk-alert', async (req, res) => {
+  try {
+    const s = await subscription.getStatus();
+    res.json({ show: s.nearExpiry, daysRemaining: s.daysRemaining, today: s.today });
+  } catch {
+    res.json({ show: false });
+  }
+});
+
 // ---- Admin auth ----
 
 app.post('/api/admin/login', (req, res) => {
@@ -91,6 +104,15 @@ app.post('/api/admin/logout', auth.requireAuth, (req, res) => {
 });
 
 app.get('/api/admin/check', auth.requireAuth, (req, res) => res.json({ ok: true }));
+
+// Admin only: subscription status (plan, days remaining, near-expiry flag).
+app.get('/api/admin/subscription', auth.requireAuth, async (req, res) => {
+  try {
+    res.json(await subscription.getStatus());
+  } catch {
+    res.status(500).json({ error: 'Subscription check failed' });
+  }
+});
 
 // ---- Admin service management ----
 

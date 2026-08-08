@@ -86,4 +86,38 @@ async function write(state) {
   await fs.writeFile(FILE, JSON.stringify(state, null, 2));
 }
 
-module.exports = { read, write };
+// ---- Subscription (Supabase: its own `subscription` table so the admin can
+// edit plan/expiry as columns; file backend: stored in the same JSON file) ----
+
+const SUB_TABLE = 'subscription';
+
+async function readSubscription() {
+  if (USE_SUPABASE) {
+    const { data, error } = await supabase()
+      .from(SUB_TABLE)
+      .select('plan, expiry_date')
+      .eq('id', ROW_ID)
+      .maybeSingle();
+    if (error) throw new Error(`Supabase subscription read failed: ${error.message}`);
+    if (!data) return { plan: 'free', expiryDate: null };
+    return { plan: (data.plan || 'free').toLowerCase(), expiryDate: data.expiry_date || null };
+  }
+  const state = await read();
+  const sub = state.subscription || {};
+  return { plan: (sub.plan || 'free').toLowerCase(), expiryDate: sub.expiryDate || null };
+}
+
+async function writeSubscription(sub) {
+  if (USE_SUPABASE) {
+    const { error } = await supabase()
+      .from(SUB_TABLE)
+      .upsert({ id: ROW_ID, plan: sub.plan, expiry_date: sub.expiryDate, updated_at: new Date().toISOString() });
+    if (error) throw new Error(`Supabase subscription write failed: ${error.message}`);
+    return;
+  }
+  const state = await read();
+  state.subscription = { plan: sub.plan, expiryDate: sub.expiryDate };
+  await write(state);
+}
+
+module.exports = { read, write, readSubscription, writeSubscription };

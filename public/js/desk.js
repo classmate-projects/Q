@@ -132,3 +132,35 @@ if (tabs) {
 renderTabs();
 renderPanel();
 setInterval(refresh, POLL_MS);
+
+// ---- Subscription reminder: desk page only, shown at most once per day and
+// dismissible so it never disturbs normal use. ----
+function showSubModal(days) {
+  const modal = document.getElementById('sub-modal');
+  const text = document.getElementById('sub-modal-text');
+  if (!modal || !text) return;
+  const n = days === 1 ? '1 day' : `${days} days`;
+  text.textContent = `The subscription expires in ${n}. Please contact the administrator to renew.`;
+  modal.classList.remove('hidden');
+}
+
+async function checkSubscription() {
+  try {
+    const res = await fetch('/api/desk-alert');
+    const data = await res.json();
+    if (data.show && localStorage.getItem('q-subalert') !== data.today) {
+      showSubModal(data.daysRemaining);
+      localStorage.setItem('q-subalert', data.today);
+    }
+  } catch (err) {
+    /* ignore */
+  }
+}
+
+const subClose = document.getElementById('sub-modal-close');
+if (subClose) {
+  subClose.addEventListener('click', () => document.getElementById('sub-modal').classList.add('hidden'));
+}
+
+checkSubscription();
+setInterval(checkSubscription, 30 * 60 * 1000); // re-evaluate every 30 min
