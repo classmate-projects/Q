@@ -8,9 +8,11 @@ how many customers arrived per service.
 
 ## Pages
 
-- **Customer page** — `http://localhost:3000/` — grid of services. The customer
-  taps a service, then presses **OK** to take a token. (Tap a different service
-  before OK to change the choice.)
+- **Home** — `http://localhost:3000/` — a landing hub with links to the four
+  pages below (Take a Token, Now Serving, Desk Control, Admin).
+- **Customer page** — `http://localhost:3000/customer` — grid of services. The
+  customer taps a service, then presses **OK** to take a token. (Tap a different
+  service before OK to change the choice.)
 - **Now Serving board** — `http://localhost:3000/display` — open on a screen in
   the waiting area. For each service it shows every desk and the token that desk
   is currently calling. Updates instantly (WebSocket) whenever a desk calls or

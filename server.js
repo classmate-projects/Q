@@ -29,6 +29,10 @@ function broadcast(payload) {
 // ---- Pages (server-rendered) ----
 
 app.get('/', (req, res) => {
+  res.render('home');
+});
+
+app.get('/customer', (req, res) => {
   res.render('index', { services: db.listServices() });
 });
 
@@ -136,7 +140,8 @@ app.get('/api/admin/report', auth.requireAuth, (req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Q token system running at http://localhost:${PORT}`);
-  console.log(`  Customer page: http://localhost:${PORT}/`);
+  console.log(`  Home page:     http://localhost:${PORT}/`);
+  console.log(`  Customer page: http://localhost:${PORT}/customer`);
   console.log(`  Display page:  http://localhost:${PORT}/display`);
   console.log(`  Desk page:     http://localhost:${PORT}/desk`);
   console.log(`  Admin page:    http://localhost:${PORT}/admin`);

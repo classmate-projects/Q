@@ -100,6 +100,87 @@ body {
   font-size: 1rem;
 }
 
+/* ---------- Home link (top-left on sub-pages) ---------- */
+
+.home-link {
+  position: fixed;
+  top: 16px;
+  left: 18px;
+  z-index: 30;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.home-link:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+/* ---------- Home landing hub ---------- */
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.home-card {
+  --svc: var(--accent);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 28px 24px 26px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.home-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 5px;
+  background: var(--svc);
+}
+
+.home-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--svc) 40%, var(--border));
+}
+
+.home-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.home-card-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.home-card-desc {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
 /* ---------- Customer grid ---------- */
 
 .grid {
